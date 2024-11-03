@@ -7,5 +7,6 @@ const wss = new WebSocketServer({ port: PORT });
 
 wss.on("connection", (ws) => {
     UserManager.getInstance().createUserConnection(ws);
+    console.log("Connection Successful");
 });
 

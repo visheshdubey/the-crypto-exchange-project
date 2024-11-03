@@ -16,6 +16,7 @@ export type DbMessage = {
         executedQty: number,
         market?: string,
         price?: string,
+        timestamp?: number,
         quantity?: string,
         side?: "buy" | "sell",
     }
