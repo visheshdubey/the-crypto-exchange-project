@@ -1,14 +1,5 @@
-import { Client } from 'pg';
 import { Router } from "express";
-
-const pgClient = new Client({
-    user: 'your_user',
-    host: 'localhost',
-    database: 'my_database',
-    password: 'your_password',
-    port: 5432,
-});
-pgClient.connect();
+import { pgClient } from "@/config/database";
 
 export const klineRouter = Router();
 
@@ -31,8 +22,11 @@ klineRouter.get("/", async (req, res) => {
     }
 
     try {
-        //@ts-ignore
-        const result = await pgClient.query(query, [new Date(startTime * 1000 as string), new Date(endTime * 1000 as string)]);
+        const sTime = new Date(Number(startTime) * 1000)
+        const eTime = new Date(Number(endTime) * 1000)
+
+        const result = await pgClient.query(query, [sTime, eTime]);
+
         res.json(result.rows.map(x => ({
             close: x.close,
             end: x.bucket,

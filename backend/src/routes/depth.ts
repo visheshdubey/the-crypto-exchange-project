@@ -6,10 +6,15 @@ export const depthRouter = Router();
 
 depthRouter.get("/", async (req, res) => {
     const { symbol } = req.query;
+
+    if (!symbol) {
+        throw new Error('Symbol is missing.');
+    }
+
     const response = await RedisManager.getInstance().sendAndAwait({
         type: GET_DEPTH,
         data: {
-            market: symbol as string
+            market: symbol.toString()
         }
     });
 
