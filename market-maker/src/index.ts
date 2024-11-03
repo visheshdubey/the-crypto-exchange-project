@@ -28,36 +28,29 @@ const CONFIG = {
 
 const generateBasePrice = () => 1000 + Math.random() * 10;
 
-const generateBidPrice = (basePrice: number) =>
-    (basePrice - Math.random() * CONFIG.PRICE_VARIATION).toFixed(1);
+const generateBidPrice = (basePrice: number) => (basePrice - Math.random() * CONFIG.PRICE_VARIATION).toFixed(1);
 
-const generateAskPrice = (basePrice: number) =>
-    (basePrice + Math.random() * CONFIG.PRICE_VARIATION).toFixed(1);
+const generateAskPrice = (basePrice: number) => (basePrice + Math.random() * CONFIG.PRICE_VARIATION).toFixed(1);
 
 const fetchOpenOrders = async () => {
     const { data } = await axios.get<OrderResponse[]>(
-        `${CONFIG.BASE_URL}/api/v1/order/open?userId=${CONFIG.USER_ID}&market=${CONFIG.MARKET}`
+        `${CONFIG.BASE_URL}/api/v1/order/open?userId=${CONFIG.USER_ID}&market=${CONFIG.MARKET}`,
     );
 
     return data;
 };
 
-const createOrder = async (order: Order) =>
-    axios.post(`${CONFIG.BASE_URL}/api/v1/order`, order);
+const createOrder = async (order: Order) => axios.post(`${CONFIG.BASE_URL}/api/v1/order`, order);
 
 const cancelOrder = async (orderId: string) =>
     axios.delete(`${CONFIG.BASE_URL}/api/v1/order`, {
         data: { orderId, market: CONFIG.MARKET },
     });
 
-const filterOrders = (orders: OrderResponse[], side: "buy" | "sell") =>
-    orders.filter((order) => order.side === side);
+const filterOrders = (orders: OrderResponse[], side: "buy" | "sell") => orders.filter((order) => order.side === side);
 
 const shouldCancelOrder = (order: OrderResponse, basePrice: number) => {
-    const probability =
-        order.side === "buy"
-            ? CONFIG.CANCEL_PROBABILITY.BID
-            : CONFIG.CANCEL_PROBABILITY.ASK;
+    const probability = order.side === "buy" ? CONFIG.CANCEL_PROBABILITY.BID : CONFIG.CANCEL_PROBABILITY.ASK;
 
     return order.side === "buy"
         ? Number(order.price) > basePrice || Math.random() < probability
@@ -66,34 +59,22 @@ const shouldCancelOrder = (order: OrderResponse, basePrice: number) => {
 
 const generateNewOrder = (side: "buy" | "sell", basePrice: number): Order => ({
     market: CONFIG.MARKET,
-    price:
-        side === "buy" ? generateBidPrice(basePrice) : generateAskPrice(basePrice),
+    price: side === "buy" ? generateBidPrice(basePrice) : generateAskPrice(basePrice),
     quantity: CONFIG.QUANTITY,
     side,
     userId: CONFIG.USER_ID,
 });
 
-const processCancellations = async (
-    orders: OrderResponse[],
-    basePrice: number
-) => {
-    const ordersToCancel = orders.filter((order) =>
-        shouldCancelOrder(order, basePrice)
-    );
+const processCancellations = async (orders: OrderResponse[], basePrice: number) => {
+    const ordersToCancel = orders.filter((order) => shouldCancelOrder(order, basePrice));
 
     await Promise.all(ordersToCancel.map((order) => cancelOrder(order.orderId!)));
 
     return ordersToCancel.length;
 };
 
-const createNewOrders = async (
-    count: number,
-    side: "buy" | "sell",
-    basePrice: number
-) => {
-    const orders = Array.from({ length: count }, () =>
-        generateNewOrder(side, basePrice)
-    );
+const createNewOrders = async (count: number, side: "buy" | "sell", basePrice: number) => {
+    const orders = Array.from({ length: count }, () => generateNewOrder(side, basePrice));
 
     await Promise.all(orders.map(createOrder));
 };
@@ -114,10 +95,7 @@ const executeOrderCycle = async () => {
         const requiredBids = CONFIG.TOTAL_BIDS - bids.length + cancelledBids;
         const requiredAsks = CONFIG.TOTAL_ASKS - asks.length + cancelledAsks;
 
-        await Promise.all([
-            createNewOrders(requiredBids, "buy", basePrice),
-            createNewOrders(requiredAsks, "sell", basePrice),
-        ]);
+        await Promise.all([createNewOrders(requiredBids, "buy", basePrice), createNewOrders(requiredAsks, "sell", basePrice)]);
 
         await delay(CONFIG.DELAY);
 
